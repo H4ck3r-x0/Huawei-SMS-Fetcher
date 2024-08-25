@@ -1,11 +1,9 @@
 import rumps
 import huaweisms.api.user
 import huaweisms.api.sms
-
-
-
 from dotenv import load_dotenv
 import os
+import webbrowser
 
 # Load environment variables
 load_dotenv()
@@ -15,9 +13,27 @@ PASSWORD = os.getenv("PASSWORD")
 
 class HuaweiSMSApp(rumps.App):
     def __init__(self):
-        super(HuaweiSMSApp, self).__init__("SMS", icon="sms_icon.png")
-        self.menu = ["Fetch SMS", "View Messages"]
+        super(HuaweiSMSApp, self).__init__("SMS", icon="sms_icon_light.png")
+        self.menu = ["Fetch SMS", "View Messages", "About"]
         self.messages = []
+
+
+    @rumps.clicked("About")
+    def show_about(self, _):
+        about_text = """
+        Huawei SMS Fetcher
+        
+        Created by: Mohammed Fahad
+        
+        This amazing app allows you to fetch and view SMS messages from your Huawei router.
+        Enjoy the convenience of accessing your messages right from your menu bar!
+        
+
+        """
+        response = rumps.alert(title="About Huawei SMS Fetcher", message=about_text, ok="Visit GitHub", cancel="Close")
+        if response:
+            webbrowser.open("https://github.com/H4ck3r-x0")
+
 
     @rumps.clicked("View Messages")
     def view_messages(self, _):
