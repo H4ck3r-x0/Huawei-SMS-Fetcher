@@ -1,9 +1,11 @@
 import rumps
 import huaweisms.api.user
 import huaweisms.api.sms
+import huaweisms.api.wlan
 from dotenv import load_dotenv
 import os
 import webbrowser
+from datetime import timedelta
 
 # Load environment variables
 load_dotenv()
@@ -14,10 +16,44 @@ PASSWORD = os.getenv("PASSWORD")
 class HuaweiSMSApp(rumps.App):
     def __init__(self):
         super(HuaweiSMSApp, self).__init__("SMS", icon="sms_icon_light.png")
-        self.menu = ["Fetch SMS", "View Messages", "About"]
+        self.menu = ["Fetch SMS", "View Messages", "Connected Devices", "About"]
         self.messages = []
 
+    @rumps.clicked("Connected Devices")
+    def view_connected_devices(self, _):
+        try:
+            ctx = huaweisms.api.user.quick_login("admin", PASSWORD)
+            devices_info = huaweisms.api.wlan.get_connected_hosts(ctx)
+            
+            if 'response' in devices_info and 'Hosts' in devices_info['response']:
+                hosts = devices_info['response']['Hosts']['Host']
+                devices_text = "📡 Connected Devices Report \n\n"
+                
+                for i, host in enumerate(hosts, 1):
+                    device_name = host.get('HostName', 'Unknown Device')
+                    ip_address = host.get('IpAddress', 'N/A').split(';')[0] 
+                    mac_address = host.get('MacAddress', 'N/A')
+                    connection_time = timedelta(seconds=int(host.get('AssociatedTime', '0')))
+                    network = host.get('AssociatedSsid', 'N/A')
+                    frequency = host.get('Frequency', 'N/A')
 
+                    devices_text += f"{'🖥️' if 'MBP' in device_name else '📱'} Device {i}: {device_name}\n"
+                    devices_text += f"   • IP: {ip_address}\n"
+                    devices_text += f"   • MAC: {mac_address}\n"
+                    devices_text += f"   • Connection Time: {connection_time}\n"
+                    devices_text += f"   • Network: {network} ({frequency})\n\n"
+
+                devices_text += f"Total Devices Connected: {len(hosts)}\n"
+                devices_text += f"Network Name: {hosts[0].get('AssociatedSsid', 'N/A')}\n"
+                devices_text += f"Frequency: {hosts[0].get('Frequency', 'N/A')}"
+
+                rumps.alert("Connected Devices", devices_text)
+            else:
+                rumps.alert("Info", "No devices connected or unable to retrieve information")
+        except Exception as e:
+            rumps.alert("Error", f"An error occurred: {str(e)}")
+    
+    
     @rumps.clicked("About")
     def show_about(self, _):
         about_text = """
@@ -25,7 +61,7 @@ class HuaweiSMSApp(rumps.App):
         
         Created by: Mohammed Fahad
         
-        This amazing app allows you to fetch and view SMS messages from your Huawei router.
+        This amazing open source app allows you to fetch and view SMS messages from your Huawei router.
         Enjoy the convenience of accessing your messages right from your menu bar!
         
 
